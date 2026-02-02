@@ -9,8 +9,20 @@ const popupText = ref('')
 const isAnimating = ref(false)
 const isLaunched = ref(false)
 
+// REFERENS TILL JA-KNAPPEN
+const yesButtonRef = ref(null)
+
 function onYes() {
   hasSaidYes.value = true
+}
+
+// --- HÄR ÄR DIN NYA LEDTRÅDS-FUNKTION ---
+function openPresent() {
+  // Här skriver du din ledtråd! 
+  popupText.value = "LEDTRÅD: Kolla i mitt datorfodral" 
+  
+  // Visa rutan
+  showPopup.value = true
 }
 
 function closePopup() {
@@ -27,23 +39,21 @@ function moveNoButton() {
 
   noCount.value++
   
-  // --- POPUPS ---
-  if (noCount.value === 5) {
-    popupText.value = "Men nu räcker det!"
-    showPopup.value = true
-  } else if (noCount.value === 10) {
-    popupText.value = "Seriöst..."
-    showPopup.value = true
-  } else if (noCount.value === 15) {
-    popupText.value = "Testa nu då"
-    showPopup.value = true
+  // --- POPUPS VID NEJ-KLICK ---
+  if (noCount.value === 5 || noCount.value === 10 || noCount.value === 15) {
+    if (noCount.value === 5) popupText.value = "Men nu räcker det!"
+    if (noCount.value === 10) popupText.value = "Seriöst..."
+    if (noCount.value === 15) popupText.value = "Testa nu då"
+
+    setTimeout(() => {
+      showPopup.value = true
+    }, 100)
   }
 
-  // --- NEJ KNAPPEN DRAR IVÄG (Hejdå!) ---
+  // --- HEJDÅ (Launch) ---
   if (noCount.value >= 20) {
     isLaunched.value = true
     
-    // Nollställ positionen så animationen tar över
     noBtnStyle.value = {
       position: 'fixed',
       left: noBtnStyle.value.left || '50%', 
@@ -53,18 +63,54 @@ function moveNoButton() {
     return
   }
 
-  // --- VANLIGT HOPPANDE ---
-  const maxX = window.innerWidth - 250
-  const maxY = window.innerHeight - 100
-  const x = Math.max(20, Math.random() * maxX)
-  const y = Math.max(20, Math.random() * maxY)
+  // --- SÄKER RÖRELSE ---
+  let yesRect = null
+  if (yesButtonRef.value) {
+    yesRect = yesButtonRef.value.getBoundingClientRect()
+  }
+
+  const maxX = window.innerWidth - 150 
+  const maxY = window.innerHeight - 80 
+
+  let newX, newY
+  let isOverlapping = true
+  let attempts = 0
+
+  while (isOverlapping && attempts < 50) {
+    newX = Math.max(20, Math.random() * maxX)
+    newY = Math.max(20, Math.random() * maxY)
+
+    if (yesRect) {
+      const buffer = 50 
+      const noLeft = newX
+      const noRight = newX + 150
+      const noTop = newY
+      const noBottom = newY + 60
+
+      const yesLeft = yesRect.left - buffer
+      const yesRight = yesRect.right + buffer
+      const yesTop = yesRect.top - buffer
+      const yesBottom = yesRect.bottom + buffer
+
+      const krockarX = noRight > yesLeft && noLeft < yesRight
+      const krockarY = noBottom > yesTop && noTop < yesBottom
+
+      if (krockarX && krockarY) {
+        isOverlapping = true
+      } else {
+        isOverlapping = false
+      }
+    } else {
+      isOverlapping = false
+    }
+    attempts++
+  }
 
   noBtnStyle.value = {
     position: 'fixed',
-    left: `${x}px`,
-    top: `${y}px`,
+    left: `${newX}px`,
+    top: `${newY}px`,
     zIndex: 50,
-    // Krymp Nej-knappen när vi närmar oss slutet
     transform: noCount.value >= 15 ? 'scale(0.4)' : 'scale(1)',
     transition: 'top 0.3s, left 0.3s'
   }
@@ -74,9 +120,9 @@ function moveNoButton() {
 <template>
   <div class="page-container">
     
-    <div v-if="showPopup" class="overlay" @click="closePopup">
+    <div v-if="showPopup" class="overlay" @click.self="closePopup">
       <div class="popup-box">
-        <p>{{ popupText }}</p>
+        <p class="popup-text">{{ popupText }}</p>
         <span class="click-hint"></span>
       </div>
     </div>
@@ -85,8 +131,8 @@ function moveNoButton() {
       <h1 class="title">Will you be my valentine?</h1>
       
       <div class="button-group">
-        
         <button 
+          ref="yesButtonRef"
           @click="onYes" 
           class="btn yes-btn" 
           :class="{ 
@@ -98,9 +144,9 @@ function moveNoButton() {
         </button>
         
         <button 
-          @mouseover="moveNoButton" 
-          @touchstart="moveNoButton" 
-          @click="moveNoButton" 
+          @mouseover.stop="moveNoButton" 
+          @touchstart.stop="moveNoButton" 
+          @click.stop="moveNoButton" 
           :style="noBtnStyle" 
           class="btn no-btn"
           :class="{ 'fly-away': isLaunched }"
@@ -111,8 +157,15 @@ function moveNoButton() {
     </div>
 
     <div v-else class="success-message">
-      <h1 class="title">❤️</h1>
-      <p>Vi ses den 14:e!</p>
+      
+      <h1 class="title" v-if="noCount >= 5">Äntligen...</h1>
+      <h1 class="title" v-else>❤️</h1>
+  
+
+      <button class="btn present-btn" @click="openPresent">
+        Klicka här för din första present 🎁
+      </button>
+
     </div>
 
   </div>
@@ -133,7 +186,6 @@ html, body, #app {
 
 <style scoped>
 /* --- ANIMATIONER --- */
-
 @keyframes popIn {
   from { transform: scale(0.5); opacity: 0; }
   to { transform: scale(1); opacity: 1; }
@@ -145,7 +197,6 @@ html, body, #app {
   100% { transform: scale(2.5); }
 }
 
-/* Ny animation för den ENORMA knappen */
 @keyframes superPulse {
   0% { transform: scale(5) rotate(0deg); }
   50% { transform: scale(5.2) rotate(2deg); }
@@ -188,14 +239,18 @@ html, body, #app {
   text-align: center;
   box-shadow: 0 10px 30px rgba(0,0,0,0.3);
   animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  pointer-events: auto; 
+  max-width: 80%; /* Så den inte blir för bred på mobil */
 }
 
-.popup-box p {
+/* Fixar radbrytningar i ledtråden snyggt */
+.popup-text {
   font-size: 2rem;
   font-weight: bold;
   color: #333;
   margin: 0 0 10px 0;
   font-family: 'Arial', sans-serif;
+  white-space: pre-wrap; /* Gör att radbrytningar i texten funkar */
 }
 
 .click-hint {
@@ -255,35 +310,40 @@ html, body, #app {
   transition: all 0.3s ease;
 }
 
+.present-btn {
+  background-color: #fff; 
+  color: #ff7eb3; 
+  margin-top: 2rem;
+  max-width: 400px; 
+  font-size: 1.2rem;
+}
+
+.present-btn:hover {
+  transform: scale(1.05);
+  box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+}
+
 .yes-btn {
   z-index: 10;
   position: relative;
-  /* Vi lägger till en transition för transform så den växer mjukt */
   transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
-/* STADIE 1: GIGANTISK (15-19 klick) */
 .gigantic {
   background-color: #5eff82;
   box-shadow: 0 10px 40px rgba(0,0,0,0.5);
   animation: pulse 1.5s infinite ease-in-out;
-  /* Vi tar bort statisk transform här och låter animationen sköta skalan */
 }
 
-/* STADIE 2: COLOSSAL (20+ klick - Finalen!) */
 .colossal {
   background-color: #5eff82;
-  box-shadow: 0 0 100px rgba(94, 255, 130, 0.8); /* Kraftigt grönt sken */
-  z-index: 100; /* Allra överst */
-  
-  /* Lås fast den i mitten av skärmen och gör den ENORM */
+  box-shadow: 0 0 100px rgba(94, 255, 130, 0.8);
+  z-index: 100;
   position: fixed;
   top: 50%;
   left: 50%;
-  /* translate(-50%, -50%) centrerar den. scale(5) gör den 5 gånger större */
   transform: translate(-50%, -50%) scale(5); 
-  
-  animation: superPulse 1s infinite ease-in-out; /* Snabbare, galnare puls */
+  animation: superPulse 1s infinite ease-in-out;
 }
 
 .yes-btn:active {
@@ -298,10 +358,18 @@ html, body, #app {
   transform: translate(-50%, -50%) scale(4.8);
 }
 
+.success-message {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  animation: popIn 0.5s ease;
+}
+
 .success-message p {
   color: white;
   font-size: 2rem;
   font-family: 'Arial', sans-serif;
+  margin: 0;
 }
 
 @media (min-width: 768px) {
