@@ -1,6 +1,13 @@
 <script setup>
 import { ref } from 'vue'
 
+// --- HÄR ÄR LÖSNINGEN ---
+// Vi importerar bilderna direkt. 
+// Om det blir RÖTT under någon av dessa rader betyder det att namnet är fel!
+// Prova då att ändra .png till .jpg eller .jpeg i raden.
+import humlanBild from './assets/humlan.png'
+import humlan1Bild from './assets/humlan1.png'
+
 const hasSaidYes = ref(false)
 const noBtnStyle = ref({})
 const noCount = ref(0) 
@@ -8,20 +15,14 @@ const showPopup = ref(false)
 const popupText = ref('')
 const isAnimating = ref(false)
 const isLaunched = ref(false)
-
-// REFERENS TILL JA-KNAPPEN
 const yesButtonRef = ref(null)
 
 function onYes() {
   hasSaidYes.value = true
 }
 
-// --- HÄR ÄR DIN NYA LEDTRÅDS-FUNKTION ---
 function openPresent() {
-  // Här skriver du din ledtråd! 
-  popupText.value = "LEDTRÅD: Kolla i mitt datorfodral" 
-  
-  // Visa rutan
+  popupText.value = "Kolla i under soffsittkudden ❤️" 
   showPopup.value = true
 }
 
@@ -39,10 +40,9 @@ function moveNoButton() {
 
   noCount.value++
   
-  // --- POPUPS VID NEJ-KLICK ---
   if (noCount.value === 5 || noCount.value === 10 || noCount.value === 15) {
-    if (noCount.value === 5) popupText.value = "Men nu räcker det!"
-    if (noCount.value === 10) popupText.value = "Seriöst..."
+    if (noCount.value === 5) popupText.value = "Jag tror du försöker klicka på fel knapp"
+    if (noCount.value === 10) popupText.value ="Komigen nu..."
     if (noCount.value === 15) popupText.value = "Testa nu då"
 
     setTimeout(() => {
@@ -50,10 +50,8 @@ function moveNoButton() {
     }, 100)
   }
 
-  // --- HEJDÅ (Launch) ---
   if (noCount.value >= 20) {
     isLaunched.value = true
-    
     noBtnStyle.value = {
       position: 'fixed',
       left: noBtnStyle.value.left || '50%', 
@@ -63,7 +61,6 @@ function moveNoButton() {
     return
   }
 
-  // --- SÄKER RÖRELSE ---
   let yesRect = null
   if (yesButtonRef.value) {
     yesRect = yesButtonRef.value.getBoundingClientRect()
@@ -71,7 +68,6 @@ function moveNoButton() {
 
   const maxX = window.innerWidth - 150 
   const maxY = window.innerHeight - 80 
-
   let newX, newY
   let isOverlapping = true
   let attempts = 0
@@ -86,16 +82,12 @@ function moveNoButton() {
       const noRight = newX + 150
       const noTop = newY
       const noBottom = newY + 60
-
       const yesLeft = yesRect.left - buffer
       const yesRight = yesRect.right + buffer
       const yesTop = yesRect.top - buffer
       const yesBottom = yesRect.bottom + buffer
 
-      const krockarX = noRight > yesLeft && noLeft < yesRight
-      const krockarY = noBottom > yesTop && noTop < yesBottom
-
-      if (krockarX && krockarY) {
+      if (noRight > yesLeft && noLeft < yesRight && noBottom > yesTop && noTop < yesBottom) {
         isOverlapping = true
       } else {
         isOverlapping = false
@@ -123,11 +115,17 @@ function moveNoButton() {
     <div v-if="showPopup" class="overlay" @click.self="closePopup">
       <div class="popup-box">
         <p class="popup-text">{{ popupText }}</p>
-        <span class="click-hint"></span>
       </div>
     </div>
 
     <div v-if="!hasSaidYes" class="content-wrapper">
+      <div class="centered-image">
+        <img 
+          :src="noCount >= 12 ? humlan1Bild : humlanBild" 
+          alt="Humlan" 
+          style="display: block; margin: 0 auto; max-width: 250px;" 
+        />
+      </div>
       <h1 class="title">Will you be my valentine?</h1>
       
       <div class="button-group">
@@ -157,22 +155,17 @@ function moveNoButton() {
     </div>
 
     <div v-else class="success-message">
-      
       <h1 class="title" v-if="noCount >= 5">Äntligen...</h1>
       <h1 class="title" v-else>❤️</h1>
-  
-
       <button class="btn present-btn" @click="openPresent">
-        Klicka här för din första present 🎁
+        Klicka här för en tidig liten present 🎁
       </button>
-
     </div>
 
   </div>
 </template>
 
 <style>
-/* Reset */
 html, body, #app {
   width: 100%;
   height: 100%;
@@ -182,25 +175,30 @@ html, body, #app {
   display: block !important;
   overflow: hidden;
 }
+.centered-image {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 24px;
+}
 </style>
 
 <style scoped>
-/* --- ANIMATIONER --- */
 @keyframes popIn {
   from { transform: scale(0.5); opacity: 0; }
   to { transform: scale(1); opacity: 1; }
 }
 
 @keyframes pulse {
-  0% { transform: scale(2.5); }
-  50% { transform: scale(2.7); }
-  100% { transform: scale(2.5); }
+  0% { transform: translate(-50%, -50%) scale(2.5); }
+  50% { transform: translate(-50%, -50%) scale(2.7); }
+  100% { transform: translate(-50%, -50%) scale(2.5); }
 }
 
 @keyframes superPulse {
-  0% { transform: scale(5) rotate(0deg); }
-  50% { transform: scale(5.2) rotate(2deg); }
-  100% { transform: scale(5) rotate(0deg); }
+  0% { transform: translate(-50%, -50%) scale(5) rotate(0deg); }
+  50% { transform: translate(-50%, -50%) scale(5.2) rotate(2deg); }
+  100% { transform: translate(-50%, -50%) scale(5) rotate(0deg); }
 }
 
 @keyframes yeet {
@@ -215,8 +213,6 @@ html, body, #app {
   pointer-events: none; 
 }
 
-
-/* --- STIL --- */
 .overlay {
   position: fixed;
   top: 0;
@@ -240,22 +236,16 @@ html, body, #app {
   box-shadow: 0 10px 30px rgba(0,0,0,0.3);
   animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
   pointer-events: auto; 
-  max-width: 80%; /* Så den inte blir för bred på mobil */
+  max-width: 80%;
 }
 
-/* Fixar radbrytningar i ledtråden snyggt */
 .popup-text {
   font-size: 2rem;
   font-weight: bold;
   color: #333;
   margin: 0 0 10px 0;
   font-family: 'Arial', sans-serif;
-  white-space: pre-wrap; /* Gör att radbrytningar i texten funkar */
-}
-
-.click-hint {
-  font-size: 0.9rem;
-  color: #888;
+  white-space: pre-wrap;
 }
 
 .page-container {
@@ -333,6 +323,10 @@ html, body, #app {
   background-color: #5eff82;
   box-shadow: 0 10px 40px rgba(0,0,0,0.5);
   animation: pulse 1.5s infinite ease-in-out;
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  z-index: 100;
 }
 
 .colossal {
@@ -342,7 +336,6 @@ html, body, #app {
   position: fixed;
   top: 50%;
   left: 50%;
-  transform: translate(-50%, -50%) scale(5); 
   animation: superPulse 1s infinite ease-in-out;
 }
 
@@ -351,7 +344,7 @@ html, body, #app {
 }
 .gigantic:active {
   animation: none;
-  transform: scale(2.4);
+  transform: translate(-50%, -50%) scale(2.4);
 }
 .colossal:active {
   animation: none;
