@@ -39,10 +39,11 @@ function moveNoButton() {
     showPopup.value = true
   }
 
-  // --- FLYG IVÄG (Hejdå!) ---
+  // --- NEJ KNAPPEN DRAR IVÄG (Hejdå!) ---
   if (noCount.value >= 20) {
     isLaunched.value = true
     
+    // Nollställ positionen så animationen tar över
     noBtnStyle.value = {
       position: 'fixed',
       left: noBtnStyle.value.left || '50%', 
@@ -63,9 +64,7 @@ function moveNoButton() {
     left: `${x}px`,
     top: `${y}px`,
     zIndex: 50,
-    // HÄR ÄR ÄNDRINGEN:
-    // Om över 15 klick -> Skala ner till 0.4 (Pytteliten!)
-    // Annars -> Skala 1 (Normal)
+    // Krymp Nej-knappen när vi närmar oss slutet
     transform: noCount.value >= 15 ? 'scale(0.4)' : 'scale(1)',
     transition: 'top 0.3s, left 0.3s'
   }
@@ -90,7 +89,10 @@ function moveNoButton() {
         <button 
           @click="onYes" 
           class="btn yes-btn" 
-          :class="{ 'gigantic': noCount >= 15 }"
+          :class="{ 
+            'gigantic': noCount >= 15 && noCount < 20,
+            'colossal': noCount >= 20 
+          }"
         >
           Ja
         </button>
@@ -143,24 +145,18 @@ html, body, #app {
   100% { transform: scale(2.5); }
 }
 
+/* Ny animation för den ENORMA knappen */
+@keyframes superPulse {
+  0% { transform: scale(5) rotate(0deg); }
+  50% { transform: scale(5.2) rotate(2deg); }
+  100% { transform: scale(5) rotate(0deg); }
+}
+
 @keyframes yeet {
-  0% {
-    /* Startar från den lilla storleken */
-    transform: scale(0.4) translateX(0);
-  }
-  20% {
-    /* Backar och laddar */
-    transform: scale(0.4) translateX(-50px) rotate(-10deg);
-  }
-  40% {
-     /* Paus */
-    transform: scale(0.4) translateX(-50px) rotate(-10deg);
-  }
-  100% {
-    /* Skjuter iväg */
-    transform: scale(0.4) translateX(2000px) rotate(720deg);
-    opacity: 0;
-  }
+  0% { transform: scale(0.4) translateX(0); }
+  20% { transform: scale(0.4) translateX(-50px) rotate(-10deg); }
+  40% { transform: scale(0.4) translateX(-50px) rotate(-10deg); }
+  100% { transform: scale(0.4) translateX(2000px) rotate(720deg); opacity: 0; }
 }
 
 .fly-away {
@@ -262,12 +258,32 @@ html, body, #app {
 .yes-btn {
   z-index: 10;
   position: relative;
+  /* Vi lägger till en transition för transform så den växer mjukt */
+  transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
+/* STADIE 1: GIGANTISK (15-19 klick) */
 .gigantic {
   background-color: #5eff82;
   box-shadow: 0 10px 40px rgba(0,0,0,0.5);
   animation: pulse 1.5s infinite ease-in-out;
+  /* Vi tar bort statisk transform här och låter animationen sköta skalan */
+}
+
+/* STADIE 2: COLOSSAL (20+ klick - Finalen!) */
+.colossal {
+  background-color: #5eff82;
+  box-shadow: 0 0 100px rgba(94, 255, 130, 0.8); /* Kraftigt grönt sken */
+  z-index: 100; /* Allra överst */
+  
+  /* Lås fast den i mitten av skärmen och gör den ENORM */
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  /* translate(-50%, -50%) centrerar den. scale(5) gör den 5 gånger större */
+  transform: translate(-50%, -50%) scale(5); 
+  
+  animation: superPulse 1s infinite ease-in-out; /* Snabbare, galnare puls */
 }
 
 .yes-btn:active {
@@ -276,6 +292,10 @@ html, body, #app {
 .gigantic:active {
   animation: none;
   transform: scale(2.4);
+}
+.colossal:active {
+  animation: none;
+  transform: translate(-50%, -50%) scale(4.8);
 }
 
 .success-message p {
